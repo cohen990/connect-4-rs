@@ -8,7 +8,7 @@ enum Player {
 }
 
 #[derive(PartialEq, Debug)]
-enum GameStatus {
+pub enum GameStatus {
     Started,
     Completed,
     Draw,
@@ -19,9 +19,8 @@ pub struct Game<const COLUMNS: usize, const ROWS: usize> {
     player_two_symbol: String,
     current: Player,
     game_board: [[usize; ROWS]; COLUMNS],
-    pub is_complete: bool,
     pub winner: Option<String>,
-    status: GameStatus,
+    pub status: GameStatus,
 }
 
 impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
@@ -31,7 +30,6 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
             player_two_symbol: player_two_symbol.to_owned(),
             current: Player::One,
             game_board: [[0; ROWS]; COLUMNS],
-            is_complete: false,
             winner: None,
             status: GameStatus::Started,
         }
@@ -48,7 +46,6 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
             player_two_symbol: self.player_two_symbol,
             current: self.current,
             game_board: self.game_board,
-            is_complete: false,
             winner: None,
             status: self.status,
         };
@@ -73,12 +70,66 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
         let mut available_move_count = 0;
         for i in 0..game.game_board.len() {
             for j in 0..game.game_board[i].len() {
+                if i + 3 < game.game_board.len()
+                    && game.game_board[i][j] != 0
+                    && game.game_board[i][j] == game.game_board[i + 1][j]
+                    && game.game_board[i][j] == game.game_board[i + 2][j]
+                    && game.game_board[i][j] == game.game_board[i + 3][j]
+                {
+                    game.status = GameStatus::Completed;
+                    game.winner = match game.current {
+                        Player::One => Some(game.player_one_symbol.to_owned()),
+                        Player::Two => Some(game.player_two_symbol.to_owned()),
+                    };
+                    return game;
+                }
+                if j + 3 < game.game_board[i].len()
+                    && game.game_board[i][j] != 0
+                    && game.game_board[i][j] == game.game_board[i][j + 1]
+                    && game.game_board[i][j] == game.game_board[i][j + 2]
+                    && game.game_board[i][j] == game.game_board[i][j + 3]
+                {
+                    game.status = GameStatus::Completed;
+                    game.winner = match game.current {
+                        Player::One => Some(game.player_one_symbol.to_owned()),
+                        Player::Two => Some(game.player_two_symbol.to_owned()),
+                    };
+                    return game;
+                }
+                if i + 3 < game.game_board.len()
+                    && j + 3 < game.game_board[i].len()
+                    && game.game_board[i][j] != 0
+                    && game.game_board[i][j] == game.game_board[i + 1][j + 1]
+                    && game.game_board[i][j] == game.game_board[i + 2][j + 2]
+                    && game.game_board[i][j] == game.game_board[i + 3][j + 3]
+                {
+                    game.status = GameStatus::Completed;
+                    game.winner = match game.current {
+                        Player::One => Some(game.player_one_symbol.to_owned()),
+                        Player::Two => Some(game.player_two_symbol.to_owned()),
+                    };
+                    return game;
+                }
+                if i >= 3
+                    && j + 3 < game.game_board[i].len()
+                    && game.game_board[i][j] != 0
+                    && game.game_board[i][j] == game.game_board[i - 1][j + 1]
+                    && game.game_board[i][j] == game.game_board[i - 2][j + 2]
+                    && game.game_board[i][j] == game.game_board[i - 3][j + 3]
+                {
+                    game.status = GameStatus::Completed;
+                    game.winner = match game.current {
+                        Player::One => Some(game.player_one_symbol.to_owned()),
+                        Player::Two => Some(game.player_two_symbol.to_owned()),
+                    };
+                    return game;
+                }
                 if game.game_board[i][j] == 0 {
                     available_move_count += 1;
                 }
             }
         }
-        if available_move_count == 0 {
+        if game.status == GameStatus::Started && available_move_count == 0 {
             game.status = GameStatus::Draw
         }
         let new_player = match game.current {
@@ -133,5 +184,101 @@ mod tests {
         let mut game = Game::<1, 1>::init("x", "y");
         game = game.play_on_column(0);
         assert_eq!(game.status, GameStatus::Draw)
+    }
+
+    /*
+    o . . .
+    o . . .
+    o . . .
+    x x x x
+    */
+    #[test]
+    fn recognises_a_win_along_the_horizontal() {
+        let mut game = Game::<4, 4>::init("x", "y");
+        game = game.play_on_column(0);
+        game = game.play_on_column(0);
+        game = game.play_on_column(1);
+        game = game.play_on_column(0);
+        game = game.play_on_column(2);
+        game = game.play_on_column(0);
+        game = game.play_on_column(3);
+        assert_eq!(game.status, GameStatus::Completed);
+        assert!(game.winner.is_some());
+        assert_eq!(game.winner.unwrap(), game.player_one_symbol);
+    }
+
+    /*
+    x . . .
+    x . . .
+    x . . .
+    x o o o
+    */
+    #[test]
+    fn recognises_a_win_along_the_vertical() {
+        let mut game = Game::<4, 4>::init("x", "y");
+        game = game.play_on_column(0);
+        game = game.play_on_column(1);
+        game = game.play_on_column(0);
+        game = game.play_on_column(2);
+        game = game.play_on_column(0);
+        game = game.play_on_column(3);
+        game = game.play_on_column(0);
+        assert_eq!(game.status, GameStatus::Completed);
+        assert!(game.winner.is_some());
+        assert_eq!(game.winner.unwrap(), game.player_one_symbol);
+    }
+
+    /*
+    . . . x
+    x x x o
+    x x o o
+    x o o o
+    */
+    #[test]
+    fn recognises_a_win_along_the_positive_diagonal() {
+        let mut game = Game::<4, 4>::init("x", "y");
+        game = game.play_on_column(0);
+        game = game.play_on_column(1);
+        game = game.play_on_column(0);
+        game = game.play_on_column(2);
+        game = game.play_on_column(0);
+        game = game.play_on_column(2);
+        game = game.play_on_column(1);
+        game = game.play_on_column(3);
+        game = game.play_on_column(1);
+        game = game.play_on_column(3);
+        game = game.play_on_column(2);
+        game = game.play_on_column(3);
+        game = game.play_on_column(3);
+        assert_eq!(game.status, GameStatus::Completed);
+        assert!(game.winner.is_some());
+        assert_eq!(game.winner.unwrap(), game.player_one_symbol);
+    }
+
+    /*
+    x . . .
+    o x x x
+    o o x x
+    o o o x
+    */
+    #[test]
+    fn recognises_a_win_along_the_negative_diagonal() {
+        let mut game = Game::<4, 4>::init("x", "y");
+        game = game.play_on_column(3);
+        game = game.play_on_column(2);
+        game = game.play_on_column(3);
+        game = game.play_on_column(1);
+        game = game.play_on_column(3);
+        game = game.play_on_column(1);
+        game = game.play_on_column(2);
+        game = game.play_on_column(0);
+        game = game.play_on_column(2);
+        game = game.play_on_column(0);
+        game = game.play_on_column(1);
+        game = game.play_on_column(0);
+        game = game.play_on_column(0);
+        assert_eq!(game.status, GameStatus::Completed);
+        assert!(game.winner.is_some());
+        assert_eq!(game.winner.unwrap(), game.player_one_symbol);
     }
 }

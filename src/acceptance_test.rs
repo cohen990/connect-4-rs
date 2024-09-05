@@ -1,4 +1,4 @@
-use crate::game::{Game, DEFAULT_COLUMNS, DEFAULT_ROWS};
+use crate::game::{Game, GameStatus, DEFAULT_COLUMNS, DEFAULT_ROWS};
 
 #[test]
 fn plays_full_game() {
@@ -16,7 +16,7 @@ fn plays_full_game() {
     game = game.play_on_column(4);
     game = game.play_on_column(1);
 
-    assert!(game.is_complete);
+    assert_eq!(game.status, GameStatus::Completed);
     assert!(game.winner.is_some());
     assert_eq!("x", game.winner.unwrap());
 }
