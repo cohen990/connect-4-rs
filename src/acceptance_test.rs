@@ -1,4 +1,4 @@
-use crate::game::Game;
+use crate::game::{Game, DEFAULT_COLUMNS, DEFAULT_ROWS};
 
 #[test]
 fn plays_full_game() {
@@ -7,7 +7,7 @@ fn plays_full_game() {
     the system should award a point to the winning player
     */
 
-    let mut game = Game::init("x", "o");
+    let mut game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::init("x", "o");
     game = game.play_on_column(1);
     game = game.play_on_column(2);
     game = game.play_on_column(1);
