@@ -24,7 +24,7 @@ pub struct Game<const COLUMNS: usize, const ROWS: usize> {
 }
 
 impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
-    pub fn init(player_one_symbol: &str, player_two_symbol: &str) -> Self {
+    pub fn initialise(player_one_symbol: &str, player_two_symbol: &str) -> Self {
         Game {
             player_one_symbol: player_one_symbol.to_owned(),
             player_two_symbol: player_two_symbol.to_owned(),
@@ -68,63 +68,15 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
             height += 1;
         }
         let mut available_move_count = 0;
-        for i in 0..game.game_board.len() {
-            for j in 0..game.game_board[i].len() {
-                if i + 3 < game.game_board.len()
-                    && game.game_board[i][j] != 0
-                    && game.game_board[i][j] == game.game_board[i + 1][j]
-                    && game.game_board[i][j] == game.game_board[i + 2][j]
-                    && game.game_board[i][j] == game.game_board[i + 3][j]
-                {
+        for column in 0..game.game_board.len() {
+            for row in 0..game.game_board[column].len() {
+                let winner = game.check_win_conditions(column, row);
+                if let Some(winning_player) = winner {
                     game.status = GameStatus::Completed;
-                    game.winner = match game.current {
-                        Player::One => Some(game.player_one_symbol.to_owned()),
-                        Player::Two => Some(game.player_two_symbol.to_owned()),
-                    };
+                    game.winner = Some(winning_player);
                     return game;
                 }
-                if j + 3 < game.game_board[i].len()
-                    && game.game_board[i][j] != 0
-                    && game.game_board[i][j] == game.game_board[i][j + 1]
-                    && game.game_board[i][j] == game.game_board[i][j + 2]
-                    && game.game_board[i][j] == game.game_board[i][j + 3]
-                {
-                    game.status = GameStatus::Completed;
-                    game.winner = match game.current {
-                        Player::One => Some(game.player_one_symbol.to_owned()),
-                        Player::Two => Some(game.player_two_symbol.to_owned()),
-                    };
-                    return game;
-                }
-                if i + 3 < game.game_board.len()
-                    && j + 3 < game.game_board[i].len()
-                    && game.game_board[i][j] != 0
-                    && game.game_board[i][j] == game.game_board[i + 1][j + 1]
-                    && game.game_board[i][j] == game.game_board[i + 2][j + 2]
-                    && game.game_board[i][j] == game.game_board[i + 3][j + 3]
-                {
-                    game.status = GameStatus::Completed;
-                    game.winner = match game.current {
-                        Player::One => Some(game.player_one_symbol.to_owned()),
-                        Player::Two => Some(game.player_two_symbol.to_owned()),
-                    };
-                    return game;
-                }
-                if i >= 3
-                    && j + 3 < game.game_board[i].len()
-                    && game.game_board[i][j] != 0
-                    && game.game_board[i][j] == game.game_board[i - 1][j + 1]
-                    && game.game_board[i][j] == game.game_board[i - 2][j + 2]
-                    && game.game_board[i][j] == game.game_board[i - 3][j + 3]
-                {
-                    game.status = GameStatus::Completed;
-                    game.winner = match game.current {
-                        Player::One => Some(game.player_one_symbol.to_owned()),
-                        Player::Two => Some(game.player_two_symbol.to_owned()),
-                    };
-                    return game;
-                }
-                if game.game_board[i][j] == 0 {
+                if game.game_board[column][row] == 0 {
                     available_move_count += 1;
                 }
             }
@@ -139,6 +91,68 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
         game.current = new_player;
         game
     }
+
+    fn check_win_conditions(&self, column: usize, row: usize) -> Option<String> {
+        if self.has_four_connected_horizontally(column, row) {
+            return match self.current {
+                Player::One => Some(self.player_one_symbol.to_owned()),
+                Player::Two => Some(self.player_two_symbol.to_owned()),
+            };
+        }
+        if self.has_four_connected_vertically(column, row) {
+            return match self.current {
+                Player::One => Some(self.player_one_symbol.to_owned()),
+                Player::Two => Some(self.player_two_symbol.to_owned()),
+            };
+        }
+        if self.has_four_connected_diagonally(column, row) {
+            return match self.current {
+                Player::One => Some(self.player_one_symbol.to_owned()),
+                Player::Two => Some(self.player_two_symbol.to_owned()),
+            };
+        }
+        if self.has_four_connected_reverse_diagonally(column, row) {
+            return match self.current {
+                Player::One => Some(self.player_one_symbol.to_owned()),
+                Player::Two => Some(self.player_two_symbol.to_owned()),
+            };
+        }
+        None
+    }
+
+    fn has_four_connected_reverse_diagonally(&self, column: usize, row: usize) -> bool {
+        column >= 3
+            && row + 3 < self.game_board[column].len()
+            && self.game_board[column][row] != 0
+            && self.game_board[column][row] == self.game_board[column - 1][row + 1]
+            && self.game_board[column][row] == self.game_board[column - 2][row + 2]
+            && self.game_board[column][row] == self.game_board[column - 3][row + 3]
+    }
+
+    fn has_four_connected_diagonally(&self, column: usize, row: usize) -> bool {
+        column + 3 < self.game_board.len()
+            && row + 3 < self.game_board[column].len()
+            && self.game_board[column][row] != 0
+            && self.game_board[column][row] == self.game_board[column + 1][row + 1]
+            && self.game_board[column][row] == self.game_board[column + 2][row + 2]
+            && self.game_board[column][row] == self.game_board[column + 3][row + 3]
+    }
+
+    fn has_four_connected_vertically(&self, column: usize, row: usize) -> bool {
+        row + 3 < self.game_board[column].len()
+            && self.game_board[column][row] != 0
+            && self.game_board[column][row] == self.game_board[column][row + 1]
+            && self.game_board[column][row] == self.game_board[column][row + 2]
+            && self.game_board[column][row] == self.game_board[column][row + 3]
+    }
+
+    fn has_four_connected_horizontally(&self, column: usize, row: usize) -> bool {
+        column + 3 < self.game_board.len()
+            && self.game_board[column][row] != 0
+            && self.game_board[column][row] == self.game_board[column + 1][row]
+            && self.game_board[column][row] == self.game_board[column + 2][row]
+            && self.game_board[column][row] == self.game_board[column + 3][row]
+    }
 }
 
 #[cfg(test)]
@@ -149,14 +163,14 @@ mod tests {
 
     #[test]
     fn game_starts_with_the_player_one_playing_first() {
-        let game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::init("x", "y");
+        let game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::initialise("x", "y");
         assert_eq!(GameStatus::Started, game.status);
         assert_eq!(Player::One, game.current);
     }
 
     #[test]
     fn player_one_and_player_two_take_turns() {
-        let mut game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::init("x", "y");
+        let mut game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::initialise("x", "y");
         assert_eq!(Player::One, game.current);
         game = game.play_on_column(1);
         assert_eq!(Player::Two, game.current);
@@ -167,21 +181,21 @@ mod tests {
     #[test]
     #[should_panic]
     fn cannot_play_on_a_column_outside_the_board() {
-        let game = Game::<1, DEFAULT_ROWS>::init("x", "y");
+        let game = Game::<1, DEFAULT_ROWS>::initialise("x", "y");
         game.play_on_column(1);
     }
 
     #[test]
     #[should_panic]
     fn cannot_stack_a_column_beyond_the_row_size_of_the_board() {
-        let mut game = Game::<2, 1>::init("x", "y");
+        let mut game = Game::<2, 1>::initialise("x", "y");
         game = game.play_on_column(0);
         game.play_on_column(0);
     }
 
     #[test]
     fn draws_the_game_if_all_positions_have_been_played() {
-        let mut game = Game::<1, 1>::init("x", "y");
+        let mut game = Game::<1, 1>::initialise("x", "y");
         game = game.play_on_column(0);
         assert_eq!(game.status, GameStatus::Draw)
     }
@@ -194,7 +208,7 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_horizontal() {
-        let mut game = Game::<4, 4>::init("x", "y");
+        let mut game = Game::<4, 4>::initialise("x", "y");
         game = game.play_on_column(0);
         game = game.play_on_column(0);
         game = game.play_on_column(1);
@@ -215,7 +229,7 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_vertical() {
-        let mut game = Game::<4, 4>::init("x", "y");
+        let mut game = Game::<4, 4>::initialise("x", "y");
         game = game.play_on_column(0);
         game = game.play_on_column(1);
         game = game.play_on_column(0);
@@ -236,7 +250,7 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_positive_diagonal() {
-        let mut game = Game::<4, 4>::init("x", "y");
+        let mut game = Game::<4, 4>::initialise("x", "y");
         game = game.play_on_column(0);
         game = game.play_on_column(1);
         game = game.play_on_column(0);
@@ -263,7 +277,7 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_negative_diagonal() {
-        let mut game = Game::<4, 4>::init("x", "y");
+        let mut game = Game::<4, 4>::initialise("x", "y");
         game = game.play_on_column(3);
         game = game.play_on_column(2);
         game = game.play_on_column(3);
