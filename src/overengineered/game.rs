@@ -1,77 +1,7 @@
-use std::fmt::Error;
+use super::win_conditions::WinCondition;
 
 pub const DEFAULT_COLUMNS: usize = 7;
 pub const DEFAULT_ROWS: usize = 6;
-
-trait WinCondition<const COLUMNS: usize, const ROWS: usize>: Sized {
-    fn is_met(board: &[[Player; ROWS]; COLUMNS], column: usize, row: usize) -> bool;
-}
-
-#[derive(Debug, Clone)]
-struct VerticalWinCondition {}
-
-impl<const COLUMNS: usize, const ROWS: usize> WinCondition<COLUMNS, ROWS> for VerticalWinCondition {
-    fn is_met(board: &[[Player; ROWS]; COLUMNS], column: usize, row: usize) -> bool {
-        row + 3 < board[column].len()
-            && board[column][row] != Player::None
-            && board[column][row] == board[column][row + 1]
-            && board[column][row] == board[column][row + 2]
-            && board[column][row] == board[column][row + 3]
-    }
-}
-
-#[derive(Debug, Clone)]
-struct HorizontalWinCondition {}
-
-impl<const COLUMNS: usize, const ROWS: usize> WinCondition<COLUMNS, ROWS>
-    for HorizontalWinCondition
-{
-    fn is_met(board: &[[Player; ROWS]; COLUMNS], column: usize, row: usize) -> bool {
-        column + 3 < board.len()
-            && board[column][row] != Player::None
-            && board[column][row] == board[column + 1][row]
-            && board[column][row] == board[column + 2][row]
-            && board[column][row] == board[column + 3][row]
-    }
-}
-
-#[derive(Debug, Clone)]
-struct DiagonalWinCondition {}
-
-impl<const COLUMNS: usize, const ROWS: usize> WinCondition<COLUMNS, ROWS> for DiagonalWinCondition {
-    fn is_met(board: &[[Player; ROWS]; COLUMNS], column: usize, row: usize) -> bool {
-        column + 3 < board.len()
-            && row + 3 < board[column].len()
-            && board[column][row] != Player::None
-            && board[column][row] == board[column + 1][row + 1]
-            && board[column][row] == board[column + 2][row + 2]
-            && board[column][row] == board[column + 3][row + 3]
-    }
-}
-
-#[derive(Debug, Clone)]
-struct ReverseDiagonalWinCondition {}
-
-impl<const COLUMNS: usize, const ROWS: usize> WinCondition<COLUMNS, ROWS>
-    for ReverseDiagonalWinCondition
-{
-    fn is_met(board: &[[Player; ROWS]; COLUMNS], column: usize, row: usize) -> bool {
-        column >= 3
-            && row + 3 < board[column].len()
-            && board[column][row] != Player::None
-            && board[column][row] == board[column - 1][row + 1]
-            && board[column][row] == board[column - 2][row + 2]
-            && board[column][row] == board[column - 3][row + 3]
-    }
-}
-
-#[derive(Debug, Clone)]
-enum WinConditions {
-    Vertical(VerticalWinCondition),
-    Horizontal(HorizontalWinCondition),
-    Diagonal(DiagonalWinCondition),
-    ReverseDiagonal(ReverseDiagonalWinCondition),
-}
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Player {
@@ -88,13 +18,13 @@ pub enum GameStatus {
 }
 
 #[derive(Debug)]
-pub struct GameError<const COLUMNS: usize, const ROWS: usize> {
+pub struct GameError<'a, const COLUMNS: usize, const ROWS: usize> {
     message: String,
-    previous_state: Game<COLUMNS, ROWS>,
+    previous_state: Game<'a, COLUMNS, ROWS>,
 }
 
-impl<const COLUMNS: usize, const ROWS: usize> GameError<COLUMNS, ROWS> {
-    pub fn with_message(message: &str, previous_state: Game<COLUMNS, ROWS>) -> Self {
+impl<'a, const COLUMNS: usize, const ROWS: usize> GameError<'a, COLUMNS, ROWS> {
+    pub fn with_message(message: &str, previous_state: Game<'a, COLUMNS, ROWS>) -> Self {
         Self {
             message: message.to_owned(),
             previous_state,
@@ -102,28 +32,51 @@ impl<const COLUMNS: usize, const ROWS: usize> GameError<COLUMNS, ROWS> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Game<const COLUMNS: usize, const ROWS: usize> {
+#[derive(Clone)]
+pub struct GameContext<'a, const COLUMNS: usize, const ROWS: usize> {
+    win_conditions: &'a Vec<Box<dyn WinCondition<COLUMNS, ROWS>>>,
+}
+
+impl<'a, const COLUMNS: usize, const ROWS: usize> GameContext<'a, COLUMNS, ROWS> {
+    fn with_win_conditions(win_conditions: &'a Vec<Box<dyn WinCondition<COLUMNS, ROWS>>>) -> Self {
+        Self { win_conditions }
+    }
+}
+
+#[derive(Clone)]
+pub struct Game<'a, const COLUMNS: usize, const ROWS: usize> {
     current: Player,
     game_board: [[Player; ROWS]; COLUMNS],
-    win_conditions: Vec<WinConditions>,
+    context: GameContext<'a, COLUMNS, ROWS>,
     pub winner: Option<Player>,
     pub status: GameStatus,
 }
 
-impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
-    pub fn initialise() -> Self {
+impl<'a, const COLUMNS: usize, const ROWS: usize> std::fmt::Debug for Game<'a, COLUMNS, ROWS> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Game")
+            .field("current", &self.current)
+            .field("game_board", &self.game_board)
+            .field("winner", &self.winner)
+            .field("status", &self.status)
+            .finish()
+    }
+}
+
+impl<'a, const COLUMNS: usize, const ROWS: usize> Game<'a, COLUMNS, ROWS> {
+    pub fn initialise(win_conditions: &'a Vec<Box<dyn WinCondition<COLUMNS, ROWS>>>) -> Self {
+        let context = GameContext::with_win_conditions(&win_conditions);
         Game {
             current: Player::One,
             game_board: [[Player::None; ROWS]; COLUMNS],
             winner: None,
-            win_conditions: vec![WinConditions::Vertical(VerticalWinCondition {})],
             status: GameStatus::Started,
+            context,
         }
     }
 
     // Plays on the column - zero indexed
-    pub fn play_on_column(self, column: usize) -> Result<Self, GameError<COLUMNS, ROWS>> {
+    pub fn play_on_column(self, column: usize) -> Result<Self, GameError<'a, COLUMNS, ROWS>> {
         let mut active_state = self.clone();
         let old_state = self;
         if column >= old_state.game_board.len() {
@@ -178,33 +131,46 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
     // I couldn't resist
     // I can't make it work how I want.
     // I'll remove the file from the crate so it doesn't compile and block. I may come back to it later.
+    // I figured it out! I think the problem was that the #[derive(Debug, Clone)] on the Game object was forcing the compiler
+    // to require those same restrictions of all of its fields. That includes the Vec<Box<dyn WinCondition>>.
+    // To fix it, I did two things. I manually implemented `Debug` and just excluded the problematic field.
+    // The second thing I did was to change the vec field from a Vec<Box<dyn WinCondition>> (rust hates cloning the contents of boxes)
+    // to a borrow of it. So &Vec<Box<dyn WinCondition>>. Borrows are just pointers and can be freely cloned.
+    // This required the addition of lifetimes etc etc so now the win conditions need to be passed in by the system initialising
+    // the game.
+    // Whether any of this was worth it or better... unless you're designing a very specific system, definitely not.
+    // It was a very interesting learning experience though.
     fn has_four_connected(&self, column: usize, row: usize) -> bool {
-        for condition in self.win_conditions {
-            if let condition(inner) = thing {
-                return thing.is_met(self, column, row);
+        for win_condition in self.context.win_conditions {
+            if win_condition.is_met(&self.game_board, column, row) {
+                return true;
             }
         }
-
         false
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::game_overengineered::{GameStatus, Player, DEFAULT_COLUMNS, DEFAULT_ROWS};
+    use crate::overengineered::{
+        game::{GameStatus, Player, DEFAULT_COLUMNS, DEFAULT_ROWS},
+        win_conditions::default_win_conditions,
+    };
 
     use super::Game;
 
     #[test]
     fn game_starts_with_the_player_one_playing_first() {
-        let game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::initialise();
+        let win_conditions = default_win_conditions();
+        let game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::initialise(&win_conditions);
         assert_eq!(GameStatus::Started, game.status);
         assert_eq!(Player::One, game.current);
     }
 
     #[test]
     fn player_one_and_player_two_take_turns() {
-        let mut game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<DEFAULT_COLUMNS, DEFAULT_ROWS>::initialise(&win_conditions);
         assert_eq!(Player::One, game.current);
         game = game.play_on_column(1).unwrap();
         assert_eq!(Player::Two, game.current);
@@ -214,14 +180,16 @@ mod tests {
 
     #[test]
     fn cannot_play_on_a_column_outside_the_board() {
-        let game = Game::<1, DEFAULT_ROWS>::initialise();
+        let win_conditions = default_win_conditions();
+        let game = Game::<1, DEFAULT_ROWS>::initialise(&win_conditions);
         let result = game.play_on_column(1);
         assert!(result.is_err())
     }
 
     #[test]
     fn cannot_stack_a_column_beyond_the_row_size_of_the_board() {
-        let mut game = Game::<2, 1>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<2, 1>::initialise(&win_conditions);
         game = game.play_on_column(0).unwrap();
         let result = game.play_on_column(0);
         assert!(result.is_err())
@@ -229,7 +197,8 @@ mod tests {
 
     #[test]
     fn draws_the_game_if_all_positions_have_been_played() {
-        let mut game = Game::<1, 1>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<1, 1>::initialise(&win_conditions);
         game = game.play_on_column(0).unwrap();
         assert_eq!(game.status, GameStatus::Draw)
     }
@@ -242,7 +211,8 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_horizontal() {
-        let mut game = Game::<4, 4>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<4, 4>::initialise(&win_conditions);
         game = game.play_on_column(0).unwrap();
         game = game.play_on_column(0).unwrap();
         game = game.play_on_column(1).unwrap();
@@ -263,7 +233,8 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_vertical() {
-        let mut game = Game::<4, 4>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<4, 4>::initialise(&win_conditions);
         game = game.play_on_column(0).unwrap();
         game = game.play_on_column(1).unwrap();
         game = game.play_on_column(0).unwrap();
@@ -284,7 +255,8 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_positive_diagonal() {
-        let mut game = Game::<4, 4>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<4, 4>::initialise(&win_conditions);
         game = game.play_on_column(0).unwrap();
         game = game.play_on_column(1).unwrap();
         game = game.play_on_column(0).unwrap();
@@ -311,7 +283,8 @@ mod tests {
     */
     #[test]
     fn recognises_a_win_along_the_negative_diagonal() {
-        let mut game = Game::<4, 4>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<4, 4>::initialise(&win_conditions);
         game = game.play_on_column(3).unwrap();
         game = game.play_on_column(2).unwrap();
         game = game.play_on_column(3).unwrap();
@@ -332,7 +305,8 @@ mod tests {
 
     #[test]
     fn when_playing_an_invalid_move_can_try_to_find_a_different_move() {
-        let mut game = Game::<1, 1>::initialise();
+        let win_conditions = default_win_conditions();
+        let mut game = Game::<1, 1>::initialise(&win_conditions);
         let result = game.play_on_column(3);
         assert!(result.is_err());
         game = result.unwrap_err().previous_state;
