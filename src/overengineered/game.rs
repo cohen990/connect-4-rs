@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::win_conditions::WinCondition;
 
 pub const DEFAULT_COLUMNS: usize = 7;
@@ -10,6 +12,16 @@ pub enum Player {
     Two,
 }
 
+impl Display for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Player::None => f.write_str("None"),
+            Player::One => f.write_str("One"),
+            Player::Two => f.write_str("Two"),
+        }
+    }
+}
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum GameStatus {
     Started,
@@ -19,8 +31,8 @@ pub enum GameStatus {
 
 #[derive(Debug)]
 pub struct GameError<'a, const COLUMNS: usize, const ROWS: usize> {
-    message: String,
-    previous_state: Game<'a, COLUMNS, ROWS>,
+    pub message: String,
+    pub previous_state: Game<'a, COLUMNS, ROWS>,
 }
 
 impl<'a, const COLUMNS: usize, const ROWS: usize> GameError<'a, COLUMNS, ROWS> {
@@ -45,11 +57,11 @@ impl<'a, const COLUMNS: usize, const ROWS: usize> GameContext<'a, COLUMNS, ROWS>
 
 #[derive(Clone)]
 pub struct Game<'a, const COLUMNS: usize, const ROWS: usize> {
-    current: Player,
     game_board: [[Player; ROWS]; COLUMNS],
     context: GameContext<'a, COLUMNS, ROWS>,
     pub winner: Option<Player>,
     pub status: GameStatus,
+    pub current: Player,
 }
 
 impl<'a, const COLUMNS: usize, const ROWS: usize> std::fmt::Debug for Game<'a, COLUMNS, ROWS> {
@@ -60,6 +72,23 @@ impl<'a, const COLUMNS: usize, const ROWS: usize> std::fmt::Debug for Game<'a, C
             .field("winner", &self.winner)
             .field("status", &self.status)
             .finish()
+    }
+}
+
+impl<'a, const COLUMNS: usize, const ROWS: usize> std::fmt::Display for Game<'a, COLUMNS, ROWS> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut output: String = "".to_owned();
+        for j in (0..self.game_board[0].len()).rev() {
+            for i in 0..self.game_board.len() {
+                output += match self.game_board[i][j] {
+                    Player::None => ".",
+                    Player::One => "x",
+                    Player::Two => "o",
+                }
+            }
+            output += "\n"
+        }
+        f.write_str(&output)
     }
 }
 
