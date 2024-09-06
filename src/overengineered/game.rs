@@ -45,20 +45,9 @@ impl<'a, const COLUMNS: usize, const ROWS: usize> GameError<'a, COLUMNS, ROWS> {
 }
 
 #[derive(Clone)]
-pub struct GameContext<'a, const COLUMNS: usize, const ROWS: usize> {
-    win_conditions: &'a Vec<Box<dyn WinCondition<COLUMNS, ROWS>>>,
-}
-
-impl<'a, const COLUMNS: usize, const ROWS: usize> GameContext<'a, COLUMNS, ROWS> {
-    fn with_win_conditions(win_conditions: &'a Vec<Box<dyn WinCondition<COLUMNS, ROWS>>>) -> Self {
-        Self { win_conditions }
-    }
-}
-
-#[derive(Clone)]
 pub struct Game<'a, const COLUMNS: usize, const ROWS: usize> {
     game_board: [[Player; ROWS]; COLUMNS],
-    context: GameContext<'a, COLUMNS, ROWS>,
+    win_conditions: &'a Vec<Box<dyn WinCondition<COLUMNS, ROWS>>>,
     pub winner: Option<Player>,
     pub status: GameStatus,
     pub current: Player,
@@ -77,7 +66,7 @@ impl<'a, const COLUMNS: usize, const ROWS: usize> std::fmt::Debug for Game<'a, C
 
 impl<'a, const COLUMNS: usize, const ROWS: usize> std::fmt::Display for Game<'a, COLUMNS, ROWS> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut output: String = "".to_owned();
+        let mut output: String = "\n".to_owned();
         for j in (0..self.game_board[0].len()).rev() {
             for i in 0..self.game_board.len() {
                 output += match self.game_board[i][j] {
@@ -88,19 +77,22 @@ impl<'a, const COLUMNS: usize, const ROWS: usize> std::fmt::Display for Game<'a,
             }
             output += "\n"
         }
+        for i in 0..self.game_board.len() {
+            output += &i.to_string();
+        }
+        output += "\n";
         f.write_str(&output)
     }
 }
 
 impl<'a, const COLUMNS: usize, const ROWS: usize> Game<'a, COLUMNS, ROWS> {
     pub fn initialise(win_conditions: &'a Vec<Box<dyn WinCondition<COLUMNS, ROWS>>>) -> Self {
-        let context = GameContext::with_win_conditions(&win_conditions);
         Game {
             current: Player::One,
             game_board: [[Player::None; ROWS]; COLUMNS],
             winner: None,
             status: GameStatus::Started,
-            context,
+            win_conditions,
         }
     }
 
@@ -170,7 +162,7 @@ impl<'a, const COLUMNS: usize, const ROWS: usize> Game<'a, COLUMNS, ROWS> {
     // Whether any of this was worth it or better... unless you're designing a very specific system, definitely not.
     // It was a very interesting learning experience though.
     fn has_four_connected(&self, column: usize, row: usize) -> bool {
-        for win_condition in self.context.win_conditions {
+        for win_condition in self.win_conditions {
             if win_condition.is_met(&self.game_board, column, row) {
                 return true;
             }
