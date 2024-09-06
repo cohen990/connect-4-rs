@@ -1,6 +1,7 @@
 use std::io;
 
 mod overengineered;
+mod remove_consts;
 mod submission;
 
 fn main() {
@@ -13,7 +14,8 @@ fn main() {
         println!("<<Main Menu>>");
         println!(
             "If you'd like to play the normal version, please enter '1'
-For the overengineered version enter '2'
+For the customisable rules version enter '2'
+For the customisable rules and board size version enter '3'
 Alternatively, if you'd like to exit, please enter '0'"
         );
 
@@ -22,6 +24,7 @@ Alternatively, if you'd like to exit, please enter '0'"
         match input.trim() {
             "1" => submission::game_loop::play(),
             "2" => overengineered::game_loop::play(),
+            "3" => remove_consts::game_loop::play(),
             "0" => {
                 println!("Thank you for playing!");
                 return;

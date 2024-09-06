@@ -1,7 +1,7 @@
 use std::io;
 
-use crate::overengineered::{
-    game::{Game, DEFAULT_COLUMNS, DEFAULT_ROWS},
+use crate::remove_consts::{
+    game::{Game, GameStatus, DEFAULT_COLUMNS, DEFAULT_ROWS},
     win_conditions::{
         default_win_conditions, DiagonalWinCondition, HorizontalWinCondition,
         ReverseDiagonalWinCondition, VerticalWinCondition, WinCondition,
@@ -13,18 +13,54 @@ pub fn play() {
     let input = &mut String::new();
 
     loop {
-        println!("<<Customisable Ruleset Mode>>");
+        println!("<<Fully Customisable Mode>>");
         println!("Would you like to play with a default gameboard? Y/n");
         input.clear();
         stdin.read_line(input).expect("Error reading from stdio");
+        let mut columns: usize = DEFAULT_COLUMNS;
+        let mut rows: usize = DEFAULT_ROWS;
         if input.trim() == "n" {
-            println!("Different game boards feature coming soon. Starting over.");
-            continue;
+            loop {
+                println!("How many columns?");
+                input.clear();
+                stdin.read_line(input).expect("Error reading from stdio");
+                match input.trim().parse::<usize>() {
+                    Ok(parsed) => {
+                        columns = parsed;
+                        break;
+                    }
+                    Err(_) => {
+                        eprintln!(
+                            "The input <{}> could not be parsed as a usize. Please try again.",
+                            input
+                        );
+                        continue;
+                    }
+                };
+            }
+            loop {
+                println!("How many rows?");
+                input.clear();
+                stdin.read_line(input).expect("Error reading from stdio");
+                match input.trim().parse::<usize>() {
+                    Ok(parsed) => {
+                        rows = parsed;
+                        break;
+                    }
+                    Err(_) => {
+                        eprintln!(
+                            "The input <{}> could not be parsed as a usize. Please try again.",
+                            input
+                        );
+                        continue;
+                    }
+                };
+            }
         }
         println!("Would you play to play with the standard ruleset? Y/n");
         input.clear();
         stdin.read_line(input).expect("Error reading from stdio");
-        let mut win_conditions: Vec<Box<dyn WinCondition<DEFAULT_COLUMNS, DEFAULT_ROWS>>> = vec![];
+        let mut win_conditions: Vec<Box<dyn WinCondition>> = vec![];
         if input.trim() == "n" {
             println!("Do you want to allow for vertical connect 4s? Y/n");
             input.clear();
@@ -60,16 +96,18 @@ pub fn play() {
             win_conditions.iter().map(|x| format!("{}", x)).collect();
 
         println!(
-            "Beginning a game with the following win conditions: {}",
+            "Beginning a game of board size: [{},{}], with the following win conditions: {}",
+            columns,
+            rows,
             printable_win_conditions.join(", ")
         );
 
-        let mut game = Game::initialise(&win_conditions);
+        let mut game = Game::initialise(columns, rows, &win_conditions);
         loop {
             println!("{}", game);
             match game.status {
-                crate::overengineered::game::GameStatus::Started => (),
-                crate::overengineered::game::GameStatus::Completed => {
+                GameStatus::Started => (),
+                GameStatus::Completed => {
                     println!(
                         "Player {} wins!",
                         game.winner
@@ -77,7 +115,7 @@ pub fn play() {
                     );
                     break;
                 }
-                crate::overengineered::game::GameStatus::Draw => {
+                GameStatus::Draw => {
                     println!("It's a draw!");
                     break;
                 }
