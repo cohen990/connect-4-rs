@@ -1,4 +1,4 @@
-use std::fmt::Error;
+use std::fmt::{Display, Error};
 
 pub const DEFAULT_COLUMNS: usize = 7;
 pub const DEFAULT_ROWS: usize = 6;
@@ -10,6 +10,16 @@ pub enum Player {
     Two,
 }
 
+impl Display for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Player::None => f.write_str("None"),
+            Player::One => f.write_str("One"),
+            Player::Two => f.write_str("Two"),
+        }
+    }
+}
+
 #[derive(PartialEq, Debug, Clone)]
 pub enum GameStatus {
     Started,
@@ -19,8 +29,8 @@ pub enum GameStatus {
 
 #[derive(Debug)]
 pub struct GameError<const COLUMNS: usize, const ROWS: usize> {
-    message: String,
-    previous_state: Game<COLUMNS, ROWS>,
+    pub message: String,
+    pub previous_state: Game<COLUMNS, ROWS>,
 }
 
 impl<const COLUMNS: usize, const ROWS: usize> GameError<COLUMNS, ROWS> {
@@ -34,10 +44,31 @@ impl<const COLUMNS: usize, const ROWS: usize> GameError<COLUMNS, ROWS> {
 
 #[derive(Clone, Debug)]
 pub struct Game<const COLUMNS: usize, const ROWS: usize> {
-    current: Player,
+    pub current: Player,
     game_board: [[Player; ROWS]; COLUMNS],
     pub winner: Option<Player>,
     pub status: GameStatus,
+}
+
+impl<const COLUMNS: usize, const ROWS: usize> std::fmt::Display for Game<COLUMNS, ROWS> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut output: String = "\n".to_owned();
+        for j in (0..self.game_board[0].len()).rev() {
+            for i in 0..self.game_board.len() {
+                output += match self.game_board[i][j] {
+                    Player::None => ".",
+                    Player::One => "x",
+                    Player::Two => "o",
+                }
+            }
+            output += "\n"
+        }
+        for i in 0..self.game_board.len() {
+            output += &i.to_string();
+        }
+        output += "\n";
+        f.write_str(&output)
+    }
 }
 
 impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
@@ -106,7 +137,9 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
     /* If you wanted to have fun, you could implement this using a kind of ruleset pattern
     Meaning that you would define structs for different win conditions that implement some kind of "win condition" trait
     You could then provide an array of win conditions that the function could iterate through.
-    It's definitely verging on over-engineering - but I do think it would be a neat exercise.
+    It's definitely over-engineering - but I do think it would be a neat exercise.
+
+    returning to this after several hours - yes it was fun
     */
     fn has_four_connected(&self, column: usize, row: usize) -> bool {
         self.has_four_connected_horizontally(column, row)
@@ -152,7 +185,7 @@ impl<const COLUMNS: usize, const ROWS: usize> Game<COLUMNS, ROWS> {
 
 #[cfg(test)]
 mod tests {
-    use crate::game::{GameStatus, Player, DEFAULT_COLUMNS, DEFAULT_ROWS};
+    use crate::submission::game::{GameStatus, Player, DEFAULT_COLUMNS, DEFAULT_ROWS};
 
     use super::Game;
 

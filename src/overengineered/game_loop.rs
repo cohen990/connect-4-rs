@@ -13,7 +13,7 @@ pub fn play() {
     let input = &mut String::new();
 
     loop {
-        println!("Welcome to connect 4");
+        println!("<<Customisable Mode>>");
         println!("Would you like to play with a default gameboard? Y/n");
         input.clear();
         stdin.read_line(input).expect("Error reading from stdio");
@@ -112,6 +112,7 @@ pub fn play() {
         input.clear();
         stdin.read_line(input).expect("Error reading from stdio");
         if input.trim() == "n" {
+            println!("Returning to the main menu.\n");
             break;
         }
     }
