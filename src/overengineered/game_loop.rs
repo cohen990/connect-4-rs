@@ -15,6 +15,26 @@ fn read_yes_no(stdin: &io::Stdin, input: &mut String, prompt: &str) -> bool {
     input.trim() != "n"
 }
 
+fn read_column(stdin: &io::Stdin, input: &mut String, player: impl std::fmt::Display, max_column: usize) -> Option<usize> {
+    println!(
+        "Player {}'s turn. Which column would you like to play in? 0-{}",
+        player,
+        max_column
+    );
+    input.clear();
+    stdin.read_line(input).expect("Error reading from stdio");
+    match input.trim().parse() {
+        Ok(column) => Some(column),
+        Err(_) => {
+            eprintln!(
+                "The input <{}> could not be parsed as a usize. Please try again.",
+                input
+            );
+            None
+        }
+    }
+}
+
 fn select_win_conditions(
     stdin: &io::Stdin,
     input: &mut String,
@@ -67,22 +87,9 @@ fn play_single_game(
                 break;
             }
         }
-        println!(
-            "Player {}'s turn. Which column would you like to play in? 0-{}",
-            game.current,
-            DEFAULT_COLUMNS - 1
-        );
-        input.clear();
-        stdin.read_line(input).expect("Error reading from stdio");
-        let column: usize = match input.trim().parse() {
-            Ok(column) => column,
-            Err(_) => {
-                eprintln!(
-                    "The input <{}> could not be parsed as a usize. Please try again.",
-                    input
-                );
-                continue;
-            }
+        let column = match read_column(stdin, input, game.current, DEFAULT_COLUMNS - 1) {
+            Some(column) => column,
+            None => continue,
         };
         game = match game.play_on_column(column) {
             Ok(game) => game,
