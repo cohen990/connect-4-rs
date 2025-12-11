@@ -77,6 +77,19 @@ fn check_game_status(game: &Game<DEFAULT_COLUMNS, DEFAULT_ROWS>) -> bool {
     }
 }
 
+fn execute_move(
+    game: Game<DEFAULT_COLUMNS, DEFAULT_ROWS>,
+    column: usize,
+) -> Game<DEFAULT_COLUMNS, DEFAULT_ROWS> {
+    match game.play_on_column(column) {
+        Ok(game) => game,
+        Err(error) => {
+            eprintln!("{}", error.message);
+            error.previous_state
+        }
+    }
+}
+
 fn run_game(
     stdin: &io::Stdin,
     input: &mut String,
@@ -97,13 +110,7 @@ fn run_game(
             Some(column) => column,
             None => continue,
         };
-        game = match game.play_on_column(column) {
-            Ok(game) => game,
-            Err(error) => {
-                eprintln!("{}", error.message);
-                error.previous_state
-            }
-        }
+        game = execute_move(game, column);
     }
 }
 
