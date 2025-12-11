@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::overengineered::{
-    game::{Game, DEFAULT_COLUMNS, DEFAULT_ROWS},
+    game::{Game, GameStatus, DEFAULT_COLUMNS, DEFAULT_ROWS},
     win_conditions::{
         default_win_conditions, DiagonalWinCondition, HorizontalWinCondition,
         ReverseDiagonalWinCondition, VerticalWinCondition, WinCondition,
@@ -53,8 +53,8 @@ fn play_single_game(
     loop {
         println!("{}", game);
         match game.status {
-            crate::overengineered::game::GameStatus::Started => (),
-            crate::overengineered::game::GameStatus::Completed => {
+            GameStatus::Started => (),
+            GameStatus::Completed => {
                 println!(
                     "Player {} wins!",
                     game.winner
@@ -62,7 +62,7 @@ fn play_single_game(
                 );
                 break;
             }
-            crate::overengineered::game::GameStatus::Draw => {
+            GameStatus::Draw => {
                 println!("It's a draw!");
                 break;
             }
