@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::overengineered::{
-    game::{Game, DEFAULT_COLUMNS, DEFAULT_ROWS},
+    game::{Game, GameStatus, DEFAULT_COLUMNS, DEFAULT_ROWS},
     win_conditions::{
         default_win_conditions, DiagonalWinCondition, HorizontalWinCondition,
         ReverseDiagonalWinCondition, VerticalWinCondition, WinCondition,
@@ -54,8 +54,8 @@ fn read_column_input(stdin: &io::Stdin, input: &mut String) -> Option<usize> {
 
 fn check_game_status(game: &Game<DEFAULT_COLUMNS, DEFAULT_ROWS>) -> bool {
     match game.status {
-        crate::overengineered::game::GameStatus::Started => true,
-        crate::overengineered::game::GameStatus::Completed => {
+        GameStatus::Started => true,
+        GameStatus::Completed => {
             println!(
                 "Player {} wins!",
                 game.winner
@@ -63,7 +63,7 @@ fn check_game_status(game: &Game<DEFAULT_COLUMNS, DEFAULT_ROWS>) -> bool {
             );
             false
         }
-        crate::overengineered::game::GameStatus::Draw => {
+        GameStatus::Draw => {
             println!("It's a draw!");
             false
         }
