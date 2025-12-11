@@ -23,25 +23,18 @@ fn select_win_conditions(
         return default_win_conditions();
     }
 
-    let mut win_conditions: Vec<Box<dyn WinCondition<DEFAULT_COLUMNS, DEFAULT_ROWS>>> = vec![];
+    let condition_configs: [(&str, &dyn Fn() -> Box<dyn WinCondition<DEFAULT_COLUMNS, DEFAULT_ROWS>>); 4] = [
+        ("Do you want to allow for vertical connect 4s? Y/n", &|| VerticalWinCondition::boxed()),
+        ("Do you want to allow for horizontal connect 4s? Y/n", &|| HorizontalWinCondition::boxed()),
+        ("Do you want to allow for forward diagonal connect 4s? Y/n", &|| DiagonalWinCondition::boxed()),
+        ("Do you want to allow for backwards diagonal connect 4s? Y/n", &|| ReverseDiagonalWinCondition::boxed()),
+    ];
 
-    if prompt_yes_no(stdin, input, "Do you want to allow for vertical connect 4s? Y/n") {
-        win_conditions.push(VerticalWinCondition::boxed())
-    }
-
-    if prompt_yes_no(stdin, input, "Do you want to allow for horizontal connect 4s? Y/n") {
-        win_conditions.push(HorizontalWinCondition::boxed())
-    }
-
-    if prompt_yes_no(stdin, input, "Do you want to allow for forward diagonal connect 4s? Y/n") {
-        win_conditions.push(DiagonalWinCondition::boxed())
-    }
-
-    if prompt_yes_no(stdin, input, "Do you want to allow for backwards diagonal connect 4s? Y/n") {
-        win_conditions.push(ReverseDiagonalWinCondition::boxed())
-    }
-
-    win_conditions
+    condition_configs
+        .iter()
+        .filter(|(prompt, _)| prompt_yes_no(stdin, input, prompt))
+        .map(|(_, constructor)| constructor())
+        .collect()
 }
 
 fn read_column_input(stdin: &io::Stdin, input: &mut String) -> Option<usize> {
