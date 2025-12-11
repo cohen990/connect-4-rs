@@ -114,29 +114,34 @@ fn run_game(
     }
 }
 
+fn setup_and_play_game(stdin: &io::Stdin, input: &mut String) -> bool {
+    if !prompt_yes_no(stdin, input, "Would you like to play with a default gameboard? Y/n") {
+        println!("Different game boards feature coming soon. Starting over.");
+        return true;
+    }
+
+    let win_conditions = select_win_conditions(stdin, input);
+
+    let printable_win_conditions: Vec<String> =
+        win_conditions.iter().map(|x| format!("{}", x)).collect();
+
+    println!(
+        "Beginning a game with the following win conditions: {}",
+        printable_win_conditions.join(", ")
+    );
+
+    run_game(stdin, input, &win_conditions);
+
+    prompt_yes_no(stdin, input, "Would you like to play again? Y/n")
+}
+
 pub fn play() {
     let stdin = io::stdin();
     let input = &mut String::new();
 
     loop {
         println!("<<Customisable Ruleset Mode>>");
-        if !prompt_yes_no(&stdin, input, "Would you like to play with a default gameboard? Y/n") {
-            println!("Different game boards feature coming soon. Starting over.");
-            continue;
-        }
-        let win_conditions = select_win_conditions(&stdin, input);
-
-        let printable_win_conditions: Vec<String> =
-            win_conditions.iter().map(|x| format!("{}", x)).collect();
-
-        println!(
-            "Beginning a game with the following win conditions: {}",
-            printable_win_conditions.join(", ")
-        );
-
-        run_game(&stdin, input, &win_conditions);
-
-        if !prompt_yes_no(&stdin, input, "Would you like to play again? Y/n") {
+        if !setup_and_play_game(&stdin, input) {
             println!("Returning to the main menu.\n");
             break;
         }
