@@ -59,6 +59,24 @@ fn read_column_input(stdin: &io::Stdin, input: &mut String) -> Option<usize> {
     }
 }
 
+fn check_game_status(game: &Game<DEFAULT_COLUMNS, DEFAULT_ROWS>) -> bool {
+    match game.status {
+        crate::overengineered::game::GameStatus::Started => true,
+        crate::overengineered::game::GameStatus::Completed => {
+            println!(
+                "Player {} wins!",
+                game.winner
+                    .expect("Game has been win with no winner. Invalid state.")
+            );
+            false
+        }
+        crate::overengineered::game::GameStatus::Draw => {
+            println!("It's a draw!");
+            false
+        }
+    }
+}
+
 fn run_game(
     stdin: &io::Stdin,
     input: &mut String,
@@ -67,20 +85,8 @@ fn run_game(
     let mut game = Game::initialise(win_conditions);
     loop {
         println!("{}", game);
-        match game.status {
-            crate::overengineered::game::GameStatus::Started => (),
-            crate::overengineered::game::GameStatus::Completed => {
-                println!(
-                    "Player {} wins!",
-                    game.winner
-                        .expect("Game has been win with no winner. Invalid state.")
-                );
-                break;
-            }
-            crate::overengineered::game::GameStatus::Draw => {
-                println!("It's a draw!");
-                break;
-            }
+        if !check_game_status(&game) {
+            break;
         }
         println!(
             "Player {}'s turn. Which column would you like to play in? 0-{}",
