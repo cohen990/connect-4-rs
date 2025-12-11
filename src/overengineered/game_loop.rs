@@ -44,6 +44,21 @@ fn select_win_conditions(
     win_conditions
 }
 
+fn read_column_input(stdin: &io::Stdin, input: &mut String) -> Option<usize> {
+    input.clear();
+    stdin.read_line(input).expect("Error reading from stdio");
+    match input.trim().parse() {
+        Ok(column) => Some(column),
+        Err(_) => {
+            eprintln!(
+                "The input <{}> could not be parsed as a usize. Please try again.",
+                input
+            );
+            None
+        }
+    }
+}
+
 fn run_game(
     stdin: &io::Stdin,
     input: &mut String,
@@ -72,17 +87,9 @@ fn run_game(
             game.current,
             DEFAULT_COLUMNS - 1
         );
-        input.clear();
-        stdin.read_line(input).expect("Error reading from stdio");
-        let column: usize = match input.trim().parse() {
-            Ok(column) => column,
-            Err(_) => {
-                eprintln!(
-                    "The input <{}> could not be parsed as a usize. Please try again.",
-                    input
-                );
-                continue;
-            }
+        let column = match read_column_input(stdin, input) {
+            Some(column) => column,
+            None => continue,
         };
         game = match game.play_on_column(column) {
             Ok(game) => game,
