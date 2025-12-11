@@ -15,6 +15,35 @@ fn read_yes_no(stdin: &io::Stdin, input: &mut String, prompt: &str) -> bool {
     input.trim() != "n"
 }
 
+fn select_win_conditions(
+    stdin: &io::Stdin,
+    input: &mut String,
+) -> Vec<Box<dyn WinCondition<DEFAULT_COLUMNS, DEFAULT_ROWS>>> {
+    if !read_yes_no(stdin, input, "Would you play to play with the standard ruleset? Y/n") {
+        let mut win_conditions: Vec<Box<dyn WinCondition<DEFAULT_COLUMNS, DEFAULT_ROWS>>> = vec![];
+
+        if read_yes_no(stdin, input, "Do you want to allow for vertical connect 4s? Y/n") {
+            win_conditions.push(VerticalWinCondition::boxed())
+        }
+
+        if read_yes_no(stdin, input, "Do you want to allow for horizontal connect 4s? Y/n") {
+            win_conditions.push(HorizontalWinCondition::boxed())
+        }
+
+        if read_yes_no(stdin, input, "Do you want to allow for forward diagonal connect 4s? Y/n") {
+            win_conditions.push(DiagonalWinCondition::boxed())
+        }
+
+        if read_yes_no(stdin, input, "Do you want to allow for backwards diagonal connect 4s? Y/n") {
+            win_conditions.push(ReverseDiagonalWinCondition::boxed())
+        }
+
+        win_conditions
+    } else {
+        default_win_conditions()
+    }
+}
+
 pub fn play() {
     let stdin = io::stdin();
     let input = &mut String::new();
@@ -25,26 +54,8 @@ pub fn play() {
             println!("Different game boards feature coming soon. Starting over.");
             continue;
         }
-        let mut win_conditions: Vec<Box<dyn WinCondition<DEFAULT_COLUMNS, DEFAULT_ROWS>>> = vec![];
-        if !read_yes_no(&stdin, input, "Would you play to play with the standard ruleset? Y/n") {
-            if read_yes_no(&stdin, input, "Do you want to allow for vertical connect 4s? Y/n") {
-                win_conditions.push(VerticalWinCondition::boxed())
-            }
 
-            if read_yes_no(&stdin, input, "Do you want to allow for horizontal connect 4s? Y/n") {
-                win_conditions.push(HorizontalWinCondition::boxed())
-            }
-
-            if read_yes_no(&stdin, input, "Do you want to allow for forward diagonal connect 4s? Y/n") {
-                win_conditions.push(DiagonalWinCondition::boxed())
-            }
-
-            if read_yes_no(&stdin, input, "Do you want to allow for backwards diagonal connect 4s? Y/n") {
-                win_conditions.push(ReverseDiagonalWinCondition::boxed())
-            }
-        } else {
-            win_conditions = default_win_conditions()
-        }
+        let win_conditions = select_win_conditions(&stdin, input);
 
         let printable_win_conditions: Vec<String> =
             win_conditions.iter().map(|x| format!("{}", x)).collect();
