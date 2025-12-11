@@ -8,48 +8,38 @@ use crate::overengineered::{
     },
 };
 
+fn read_yes_no(stdin: &io::Stdin, input: &mut String, prompt: &str) -> bool {
+    println!("{}", prompt);
+    input.clear();
+    stdin.read_line(input).expect("Error reading from stdio");
+    input.trim() != "n"
+}
+
 pub fn play() {
     let stdin = io::stdin();
     let input = &mut String::new();
 
     loop {
         println!("<<Customisable Ruleset Mode>>");
-        println!("Would you like to play with a default gameboard? Y/n");
-        input.clear();
-        stdin.read_line(input).expect("Error reading from stdio");
-        if input.trim() == "n" {
+        if !read_yes_no(&stdin, input, "Would you like to play with a default gameboard? Y/n") {
             println!("Different game boards feature coming soon. Starting over.");
             continue;
         }
-        println!("Would you play to play with the standard ruleset? Y/n");
-        input.clear();
-        stdin.read_line(input).expect("Error reading from stdio");
         let mut win_conditions: Vec<Box<dyn WinCondition<DEFAULT_COLUMNS, DEFAULT_ROWS>>> = vec![];
-        if input.trim() == "n" {
-            println!("Do you want to allow for vertical connect 4s? Y/n");
-            input.clear();
-            stdin.read_line(input).expect("Error reading from stdio");
-            if input.trim() != "n" {
+        if !read_yes_no(&stdin, input, "Would you play to play with the standard ruleset? Y/n") {
+            if read_yes_no(&stdin, input, "Do you want to allow for vertical connect 4s? Y/n") {
                 win_conditions.push(VerticalWinCondition::boxed())
             }
 
-            println!("Do you want to allow for horizontal connect 4s? Y/n");
-            input.clear();
-            stdin.read_line(input).expect("Error reading from stdio");
-            if input.trim() != "n" {
+            if read_yes_no(&stdin, input, "Do you want to allow for horizontal connect 4s? Y/n") {
                 win_conditions.push(HorizontalWinCondition::boxed())
             }
 
-            println!("Do you want to allow for forward diagonal connect 4s? Y/n");
-            input.clear();
-            stdin.read_line(input).expect("Error reading from stdio");
-            if input.trim() != "n" {
+            if read_yes_no(&stdin, input, "Do you want to allow for forward diagonal connect 4s? Y/n") {
                 win_conditions.push(DiagonalWinCondition::boxed())
             }
-            println!("Do you want to allow for backwards diagonal connect 4s? Y/n");
-            input.clear();
-            stdin.read_line(input).expect("Error reading from stdio");
-            if input.trim() != "n" {
+
+            if read_yes_no(&stdin, input, "Do you want to allow for backwards diagonal connect 4s? Y/n") {
                 win_conditions.push(ReverseDiagonalWinCondition::boxed())
             }
         } else {
@@ -108,10 +98,7 @@ pub fn play() {
             }
         }
 
-        println!("Would you like to play again? Y/n");
-        input.clear();
-        stdin.read_line(input).expect("Error reading from stdio");
-        if input.trim() == "n" {
+        if !read_yes_no(&stdin, input, "Would you like to play again? Y/n") {
             println!("Returning to the main menu.\n");
             break;
         }
